@@ -1,0 +1,61 @@
+####### Productos
+
+### Obtener productos
+GET http://localhost:8080/productos
+
+### Obtener producto por ID
+GET http://localhost:8080/productos/1
+
+### Guardar productos
+POST http://localhost:8080/productos
+Content-Type: application/json
+
+{
+    "admin": true,
+    "nombre": "Producto 1", 
+    "descripcion": "Este es un producto de prueba", 
+    "codigo": "123", 
+    "foto": "imagen.png", 
+    "precio": "99,99", 
+    "stock": "100"
+}
+
+### Borrar producto
+DELETE http://localhost:8080/productos/1
+Content-Type: application/json
+
+{
+    "admin": true
+}
+
+### Actulizar producto
+PUT http://localhost:8080/productos/1
+Content-Type: application/json
+
+{
+    "admin": true,
+    "nombre": "Producto test", 
+    "descripcion": "Este es un producto de prueba", 
+    "codigo": "123", 
+    "foto": "imagen.png", 
+    "precio": "99,99", 
+    "stock": "100"
+}
+
+####### Carrito
+
+### Obtener el carrito
+GET http://localhost:8080/carrito
+
+### Agreagr carrito
+POST http://localhost:8080/carrito
+Content-Type: application/json
+
+{
+    "idProdcuto": "1", 
+    "cantidadProducto": 10
+}
+
+### Borrar un corrito por ID
+DELETE http://localhost:8080/carrito/1
+Content-Type: application/json
