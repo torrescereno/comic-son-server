@@ -1,15 +1,17 @@
-const express = require('express');
+const express = require("express");
 const rutaCarrito = express.Router();
-const { listarCarritos, agregarCarrito, borrarCarrito } = require('../services/carrito.services');
+const {
+	getAllCarts,
+	postCart,
+	deleteCart,
+} = require("../services/carrito.services");
 
+rutaCarrito
+	.route("")
 
+	.get(getAllCarts)
+	.post(postCart);
 
-rutaCarrito.route('')
-
-.get(listarCarritos)
-.post(agregarCarrito);
-
-rutaCarrito.route('/:id')
-.delete(borrarCarrito);
+rutaCarrito.route("/:id").delete(deleteCart);
 
 module.exports = rutaCarrito;

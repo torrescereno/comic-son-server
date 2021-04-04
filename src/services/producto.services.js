@@ -1,105 +1,205 @@
-const Producto = require('../models/producto');
+const admin = require("../db/firebase");
+const db = admin.firestore();
+const query = db.collection("productos");
 
-let productos = [];
-const getProduct = (id) => productos.find( producto => producto.id == id)
+// Obtener todos los proctos
+const getAllProducts = async (req, res) => {
+	try {
+		const querySnapshot = await query.get();
+		const docs = querySnapshot.docs;
+		const data = docs.map((doc) => ({
+			id: doc.id,
+			codigo: doc.data().codigo,
+			descripcion: doc.data().descripcion,
+			foto: doc.data().foto,
+			nombre: doc.data().nombre,
+			precio: doc.data().precio,
+			stock: doc.data().stock,
+		}));
 
-const obtenerProductos = (req, res) => {
-    try {
-        res.status(200).json(productos)
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({mensaje: 'error al realizar la solicitud'})
-    }  
-}
+		res.status(200).json(data);
+	} catch (err) {
+		res.status(400).json({ mensaje: "error al realizar la solicitud" });
+	}
+};
 
-const agregarProducto = (req, res) => {
+// Agregar productos
+const postProduct = async (req, res) => {
+	try {
+		if (req.body.admin) {
+			const querySnapshot = await query.get();
+			const id = querySnapshot.docs.length + 1;
+			const doc = query.doc(`${id}`);
+			await doc.create(req.body);
+			res.status(201).json("se creo el producto correctamente");
+		} else {
+			res.status(401).json({
+				error: "-1",
+				descripcion: "ruta POST/prodcutos metodo postProduct no autorizada",
+			});
+		}
+	} catch (err) {
+		res.status(400).json({ mensaje: "error al intentar agregar un producto" });
+	}
+};
 
-    try {
+// Buscsar producto por codigo
+const getProductById = async (req, res) => {
+	try {
+		const id = req.params.id;
+		const doc = query.doc(`${id}`);
+		const item = await doc.get();
+		const data = item.data();
 
-        if (req.body.admin) {
-            // Se toma todos del cuerpo que reciba del front (el id y el timestamp lo genera la base de datos)
-            
-            // ******* //
-            const id = productos.length + 1;
-            const timestamp =  new Date();
-            const {nombre, descripcion, codigo, foto, precio, stock} = req.body;
-            // ******* //
+		data.length === 0
+			? res.status(204).json({ error: "producto no encontrado" })
+			: res.status(200).json(data);
+	} catch (err) {
+		res.status(400).json({ mensaje: `error al intentar buscar el producto` });
+	}
+};
 
-            const pProducto = new Producto(id, timestamp, nombre, descripcion, codigo, foto, precio, stock);
-            productos.push(pProducto);
-            res.status(200).json(pProducto)
-        }else{
-            res.status(401).json({"error": "-1", "descripcion": "ruta POST/prodcutos metodo agregarProductos no autorizada"})
-        }
+// Actualizar productos
+const putProducts = async (req, res) => {
+	try {
+		if (req.body.admin) {
+			const id = req.params.id;
+			const doc = query.doc(`${id}`);
+			const item = await doc.get();
+			const data = item.data();
 
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({mensaje: 'error al intentar agregar un producto'})
-    }
-}
+			data.length === 0 ? res.sendStatus(404) : await doc.update(req.body);
 
-const busrcarPrducto = (req, res) => {
-    try {
-        const id = req.params.id;
-        const producto = getProduct(id);
-        !producto ? res.status(204).json({error: 'producto no encontrado'}) : res.status(200).json(producto);
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({mensaje: `error al intentar buscar el producto`})
-    }
-}
+			res.status(201).json(data);
+		} else {
+			res.status(401).json({
+				error: "-1",
+				descripcion: "ruta PUT/prodcutos metodo putProducts no autorizada",
+			});
+		}
+	} catch (err) {
+		res
+			.status(400)
+			.json({ mensaje: `error al intentar actualizar el producto` });
+	}
+};
 
-const actualizarProducto = (req, res) => {
-    try {
+// Borrar productos
+const deleteProduct = async (req, res) => {
+	try {
+		if (req.body.admin) {
+			const id = req.params.id;
+			const doc = query.doc(`${id}`);
+			const item = await doc.get();
+			const data = item.data();
 
-        if (req.body.admin) {
-            const id = req.params.id;
-            const producto = getProduct(id);
-    
-            !producto ?  res.sendStatus(404) : 
-                producto.nombre = req.body.nombre;
-                producto.des = req.body.precio;
-                producto.foto = req.body.foto;
-                producto.precio = req.body.precio; 
-                producto.stock = req.body.stock;
-            
-            res.status(201).json(producto)
-        
-        }else{
-            res.status(401).json({"error": "-1", "descripcion": "ruta PUT/prodcutos metodo actualizarProducto no autorizada"})
-        }
-        
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({mensaje: `error al intentar actualizar el producto`});
-    }
-}
+			!data ? res.sendStatus(404) : await doc.delete();
 
-const borrarProducto = (req, res) => {
-    try {
-        if (req.body.admin) {
-            const id = req.params.id;
-            const producto = getProduct(id)
-    
-            !producto ?  res.sendStatus(404) :   
-                productos = productos.filter( producto => producto.id != id );
-            
-            res.status(410).json(producto);
-        }else{
-            res.status(401).json({"error": "-1", "descripcion": "ruta DELETE/prodcutos metodo borrarProducto no autorizada"})
-        }
-        
-    } catch (err) {
-        console.log(err);
-        res.status(400).json({mensaje: `error al intentar borrar el producto`});
-    }
-}
+			res.status(410).json(data);
+		} else {
+			res.status(401).json({
+				error: "-1",
+				descripcion: "ruta DELETE/prodcutos metodo deleteProduct no autorizada",
+			});
+		}
+	} catch (err) {
+		res.status(400).json({ mensaje: `error al intentar borrar el producto` });
+	}
+};
+
+// Buscar producto por nombre
+const getProductByName = async (req, res) => {
+	try {
+		const name = req.params.name;
+		const data = await (await query.where("nombre", "==", name).get()).docs;
+		const item = data.map((doc) => ({
+			id: doc.id,
+			codigo: doc.data().codigo,
+			descripcion: doc.data().descripcion,
+			foto: doc.data().foto,
+			nombre: doc.data().nombre,
+			precio: doc.data().precio,
+			stock: doc.data().stock,
+		}));
+
+		item.length === 0
+			? res.status(204).json({ error: "producto no encontrado" })
+			: res.status(200).json(item);
+	} catch (error) {
+		res.status(400).json({ mensaje: "error al realizar la solicitud" });
+	}
+};
+
+// Buscar producto por codigo
+const getProductByCod = async (req, res) => {
+	try {
+		const id = req.params.id;
+		const data = await (await query.where("codigo", "==", id).get()).docs;
+		const item = data.map((doc) => ({
+			id: doc.id,
+			codigo: doc.data().codigo,
+			descripcion: doc.data().descripcion,
+			foto: doc.data().foto,
+			nombre: doc.data().nombre,
+			precio: doc.data().precio,
+			stock: doc.data().stock,
+		}));
+
+		item.length === 0
+			? res.status(204).json({ error: "producto no encontrado" })
+			: res.status(200).json(item);
+	} catch (error) {
+		res.status(400).json({ mensaje: "error al realizar la solicitud" });
+	}
+};
+
+// Buscar producto por rango de precio
+const getProductsByPrice = async (req, res) => {
+	try {
+		const menor = req.query.menor || 0;
+		const mayor = req.query.mayor || "all";
+		let data = "";
+
+		if (mayor === "all") {
+			// todos los productos mayores al menor indicado
+			const querySnapshot = await query.where("precio", ">=", menor).get();
+			const docs = querySnapshot.docs;
+			data = docs;
+		} else {
+			// todos los prodcutos entre el menor y el mayor
+			const querySnapshot = await query
+				.where("precio", ">=", 100)
+				.where("precio", "<=", 10000)
+				.get();
+			const docs = querySnapshot.docs;
+			data = docs;
+		}
+
+		const item = data.map((doc) => ({
+			id: doc.id,
+			codigo: doc.data().codigo,
+			descripcion: doc.data().descripcion,
+			foto: doc.data().foto,
+			nombre: doc.data().nombre,
+			precio: doc.data().precio,
+			stock: doc.data().stock,
+		}));
+
+		item.length === 0
+			? res.status(204).json({ error: "producto no encontrado" })
+			: res.status(200).json(item);
+	} catch (error) {
+		res.status(400).json({ mensaje: "error al realizar la solicitud" });
+	}
+};
 
 module.exports = {
-    obtenerProductos,
-    agregarProducto,
-    busrcarPrducto,
-    actualizarProducto,
-    borrarProducto,
-    productos
-}
+	getAllProducts,
+	postProduct,
+	getProductById,
+	putProducts,
+	deleteProduct,
+	getProductByCod,
+	getProductByName,
+	getProductsByPrice,
+};

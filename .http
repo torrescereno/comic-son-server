@@ -4,7 +4,7 @@
 GET http://localhost:8080/productos
 
 ### Obtener producto por ID
-GET http://localhost:8080/productos/1
+GET http://localhost:8080/productos/id/1
 
 ### Guardar productos
 POST http://localhost:8080/productos
